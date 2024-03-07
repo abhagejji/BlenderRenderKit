@@ -39,19 +39,22 @@ class ViewLayerCreation:
         # self.mod_floor.modifiers["Wireframe"].show_render = False
         return
 
-
-    def depth(self):    #either layer or a function in render or composition class
+    def depth(self):  # either layer or a function in render or composition class
         self.current_layer.use_pass_z = True
-        #OUTPUT
+        # OUTPUT
         output_file = self.tree.nodes.new("CompositorNodeOutputFile")
         output_file.name = "OutFile_depth"
-        # print("render outputn depth",render_layer_node.outputs.keys())
-        # tree.links.new(render_layer_node.outputs[2], output_file.inputs['Image'])
         output_file.base_path = self.output_img_folder
         output_file.format.file_format = "OPEN_EXR"
         output_file.file_slots[0].path = "depth"
         
-        self.tree.links.new(self.tree.nodes["RLayers_all_" + self.view_layer_name].outputs['Depth'],self.tree.nodes['OutFile_depth'].inputs['Image'])
+        # Add a Normalize node
+        normalize_node = self.tree.nodes.new(type="CompositorNodeNormalize")
+        
+        # Link the Depth output to the Normalize node, and then to the Output node
+        depth_output = self.tree.nodes["RLayers_all_" + self.view_layer_name].outputs['Depth']
+        self.tree.links.new(depth_output, normalize_node.inputs[0])
+        self.tree.links.new(normalize_node.outputs[0], output_file.inputs['Image'])
 
         return
 
