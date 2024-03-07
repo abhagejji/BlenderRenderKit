@@ -121,8 +121,8 @@ class MeshGeometry:
         # plane = bpy.data.objects.get('flat_floor')
         # Add a subdivision surface modifier for displacement
         bpy.ops.object.modifier_add(type='SUBSURF')
-        plane.modifiers['Subdivision'].levels = 7
-        plane.modifiers['Subdivision'].render_levels = 7
+        plane.modifiers['Subdivision'].levels = 3
+        plane.modifiers['Subdivision'].render_levels = 3
         
         # Apply the modifier
         bpy.ops.object.modifier_apply(modifier="Subdivision")

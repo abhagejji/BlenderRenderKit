@@ -6,7 +6,7 @@ import csv
 import imageio.v2 as imageio
 import h5py
 import uuid
-
+import subprocess
 
 def read_exr(file_path):
     """Read an EXR file and return its data as a NumPy array."""
@@ -25,7 +25,7 @@ sys.path.append(os.path.basename(bpy.data.filepath))
 
 csv_filepath = "./output/codification.csv"
 
-mount_point = "/home/abha/abha/umn/mono_depth/resources_data/selected_obj_files/"
+mount_point = "./data/selected_obj_files/"
 
 with open("./data/object_loc_output_loc.csv", 'r') as csv_file:
     csv_reader = csv.reader(csv_file)
@@ -39,10 +39,19 @@ with open("./data/object_loc_output_loc.csv", 'r') as csv_file:
         temp_folder = "./temp/"
         # scene.direct_renders(object_filepath,output_folder)
         arguments = str(object_filepath)+" "+str(output_folder) +" "+str(temp_folder) +" "+str(csv_filepath)
+        arguments = [str(object_filepath), str(output_folder), str(temp_folder), str(csv_filepath)]
         # print(f'blender -P tutorial.py -- '+ arguments)
 
         # breakpoint()
-        os.system(f'blender -b -P tutorial.py -- '+ arguments)
+        command = ['blender', '-b', '-P', 'tutorial.py', '--']
+        command.extend(arguments)
+        try:
+            result = subprocess.run(command, check=True)
+        except subprocess.CalledProcessError as e:
+            # If an error occurs in the subprocess, print the error and exit
+            print(f"Error executing Blender script: {e}", file=sys.stderr)
+            sys.exit(1)
+        # os.system(f'blender -b -P tutorial.py -- '+ arguments)
         filename_hdf5 = str(uuid.uuid4())+'.hdf5'
         hdf5_path = output_folder + filename_hdf5  # Ensure this is a full path including the file name
         print(hdf5_path)
@@ -69,6 +78,8 @@ with open("./data/object_loc_output_loc.csv", 'r') as csv_file:
         with open(csv_filepath, mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerows(lines)
+        if index == 1:
+            break
 
 print("-----------------------------------------------------------------------")
 
