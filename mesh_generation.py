@@ -109,6 +109,48 @@ class MeshGeometry:
         bpy.ops.object.modifier_apply(modifier="new",object=plane)
         return plane
     
+    def create_sinusoidal_floor(self,size=10, subdivisions=90, wave_height=1.5, wave_width=0.15, wave_narrowness=1.5, wave_speed=0.25, auto_smooth_angle=180.0):
+        """
+        Creates a sinusoidal floor with customizable parameters.
+
+        :param size: Size of the base plane.
+        :param subdivisions: Number of subdivisions for the mesh.
+        :param wave_height: Height of the wave effect.
+        :param wave_width: Width of the waves.
+        :param wave_narrowness: Narrowness of the waves.
+        :param wave_speed: Speed of the wave animation.
+        :param auto_smooth_angle: Angle for auto smooth (degrees).
+        """
+        # Add a plane and enter edit mode to subdivide
+        bpy.ops.mesh.primitive_plane_add(size=size, enter_editmode=True, align='WORLD', location=(0, 0, -0.01))
+        obj = bpy.context.object
+        bpy.ops.mesh.subdivide(number_cuts=subdivisions)
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Apply Wave modifier if the object is a mesh
+        if obj.type == 'MESH':
+            wave_modifier = obj.modifiers.new(name="WavyEffect", type='WAVE')
+            wave_modifier.use_normal_y = True  # Apply the wave along the Y-axis for this example
+            wave_modifier.height = wave_height
+            wave_modifier.width = wave_width
+            wave_modifier.narrowness = wave_narrowness
+            wave_modifier.speed = wave_speed
+            wave_modifier.use_x = True
+            wave_modifier.start_position_x = 10.0
+
+        # Re-enter edit mode to add additional subdivisions for smoothing
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.subdivide(number_cuts=5)
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Apply auto smooth settings
+        obj.data.use_auto_smooth = True
+        obj.data.auto_smooth_angle = auto_smooth_angle * 3.14159 / 180  # Convert degrees to radians
+
+        # Optionally, set object-specific rendering settings
+        obj.cycles.is_shadow_catcher = False
+        return obj
+    
     def apply_pbr_textures(self,base_color_path, normals_path, roughness_path, displacement_path):
         # Create a plane for the floor
         bpy.ops.mesh.primitive_plane_add(size=10, enter_editmode=True, align='WORLD', location=(0, 0, -0.01))
