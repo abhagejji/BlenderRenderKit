@@ -1,5 +1,5 @@
 import sys
-# print(sys.path)
+import csv
 sys.path.append('/home/abha/abha/umn/rendering_blender/modular/')
 import argparse
 import os
@@ -9,18 +9,10 @@ from create_renders_init import RenderPara
 from mesh_generation import MeshGeometry
 from class_layers_compositor import ViewLayerCreation
 import bpy
-
-print("PRINT1")
-
-# parser = argparse.ArgumentParser()
-# parser.add_argument('object_filepath', nargs='?', help="Path to the obj file")
-# # parser.add_argument('height',nargs='?', help="height in mm")
-# parser.add_argument('output_image_path', nargs='?', help="Path to where the final files, will be saved")
-# args = parser.parse_args()
-
+import random
 
 # Create a new argument parser
-parser = argparse.ArgumentParser(description="Process some integers.")
+parser = argparse.ArgumentParser(description="Process some arguments.")
 
 # Modify your script to parse arguments after the '--'
 argv = sys.argv
@@ -28,16 +20,29 @@ argv = argv[argv.index("--") + 1:]  # Use argv after the '--'
 
 parser.add_argument('object_filepath', help="Path to the obj file")
 parser.add_argument('output_image_path', help="Path to where the final files, will be saved")
+parser.add_argument('temp_folder', help="temp folder to save .exr files")
+parser.add_argument('csv_path', help="temp folder to save .exr files")
 args = parser.parse_args(argv)
-print("PRINT2")
 
-# all_objects = bpy.data.objects
+camera_pos = [
+               [2.0, 2.0, 2.0,1.0471975803375244, 0.0, 2.26892805099487],
+               [2.0, 9, .5,1.5277109146118164, 0.03817130625247955, 2.7484679222106934],
+               [4.0, 2.0, 3.0,1.0484371185302734, -0.0, 2.0344438552856445],
+               [-4.0, 2.0, 5.0,0.7740721702575684, -0.0, -2.0344438552856445],
+               [-4.0, 2.0, 1.0,1.4430112838745117, -0.0, -2.0344438552856445],
+               [2.0, 9.0, 5.0,1.110205054283142, -0.0, 2.9229238033294678],
+               [2.1,-1.7,1.4, 1.2129089832305908, -2.624311309773475e-05, 0.9161228537559509],
+               [6,3,0.5,1.517304539680481, 0.019352460280060768, 1.9472476243972778],
+               [5,5,5,1.0074996948242188, -0.004958962555974722, 2.235434293746948],
+            ]
 
+mount_point_texture_lib = "./data/texture_lib/"
+texture_all = ['Abstract_Organic_003','Stylized_Dry_Mud_001','Stylized_Stone_Floor_005','Tiles_046','Paper_Wrinkled_001','Stylized_Rocks_002','Tiles_040']
 
 class Linking:
 
-    def __init__(self, mod_floor, light, camera, object, flat_floor) -> None:
-        self.mod_floor = mod_floor
+    def __init__(self, light, camera, object, flat_floor) -> None:
+        # self.mod_floor = mod_floor
         self.light = light
         self.camera = camera
         self.object =  object
@@ -54,7 +59,7 @@ class Linking:
         return 
 
     def linking(self):  #links all objects to a collection
-        self.plane_collection.objects.link(self.mod_floor)
+        # self.plane_collection.objects.link(self.mod_floor)
         # self.plane_collection.objects.link(self.duplicated_object)
         self.light_collection.objects.link(self.light)
         self.light_collection.objects.link(self.camera)
@@ -89,10 +94,8 @@ def main():
     my_layer = "new_view_layer"
     light_camera = LightCamera()
 
-
-    # shadow_view_layer = ViewLayerCreation("ShadowCatcherLayer", [])
     object_filepath = args.object_filepath
-    output_img_folder = args.output_image_path
+    output_img_folder = args.temp_folder#"./temp/"#args.output_image_path
     # self.save_as_mainfile = bpy.ops.wm.save_as_mainfile #TODO
     # self.file_path2 = file_path2
     isExist = os.path.exists(output_img_folder)
@@ -103,60 +106,56 @@ def main():
 
     all_objects = bpy.data.objects
     utilities.remove_objects(all_objects)
-
     object = mesh_geometry.shapenet_import(object_filepath)
 
     # object_data = object.data.copy()
     # duplicated_object = bpy.data.objects.new("obj_copy", object_data)
 
-    mod_floor = mesh_geometry.add_modified_floor()
+    # mod_floor = mesh_geometry.add_modified_floor()
     # self.mod_floor = self.flat_2()
-    flat_floor = mesh_geometry.add_flat_floor()
+    # flat_floor = mesh_geometry.add_flat_floor()
+    current_texture = random.choice(texture_all)
+    # current_texture = "Tiles_046"
+    flat_floor = mesh_geometry.apply_pbr_textures(mount_point_texture_lib + current_texture + "/basecolor.jpg", 
+                                     mount_point_texture_lib + current_texture+ "/normal.jpg", 
+                                     mount_point_texture_lib + current_texture+ "/roughness.jpg", 
+                                     mount_point_texture_lib + current_texture+ "/height.png")
     light = light_camera.create_light()
-    camera = light_camera.create_camera()
 
-    mod_floor.is_shadow_catcher = True
-    # self.duplicated_object.is_holdout = False# True # default is false anyway
-    # self.duplicated_object.visible_shadow = True
+    random_camera_pose = random.choice(camera_pos)
+    camera = light_camera.create_camera(random_camera_pose)
 
-    flat_floor.is_shadow_catcher = True
-    # self.duplicated_object.is_holdout = False# True
-    # self.object.visible_shadow = True
-    # self.object.visible_shadow = False
-    # self.mod_floor.visible_shadow = True
-    # self.mod_floor.hide_render = False
+
+    # mod_floor.is_shadow_catcher = True #TODO
+    # self.duplicated_object.is_holdout = False# True # default is false anyway #TODO
+    # self.mod_floor.hide_render = False #TODO
     # self.mod_floor.visible_camera = True #TODO
+
     object.visible_shadow = True
     render_para.init_render()
     # print(" the objects",bpy.data.objects.keys())
-    # self.saving_blends()
-    linking_coll = Linking(mod_floor, light, camera, object, flat_floor)
+    linking_coll = Linking(light, camera, object, flat_floor)
     linking_coll.colls()
     linking_coll.linking()
     utilities.clear_node()
-    
-    # self.shadow_layer()
-    # self.new_view_layer()
-    
-    
-    # self.shading() # Problem
+
     view_layer = ViewLayerCreation(my_layer, ["objects_col", "light_col"], output_img_folder)
-    new_view_layer = bpy.context.scene.view_layers[my_layer]
-    new_view_layer.use_pass_diffuse_color = True
-    new_view_layer.use_pass_z = True
-    new_view_layer.use_pass_normal = True
-    new_view_layer.use_pass_object_index = True    
-    new_view_layer.pass_alpha_threshold = 0.05
     view_layer.depth()
     view_layer.normals()
     view_layer.segmentation()
     view_layer.albedo()
+    view_layer.shadow()
 
-    list_layers = [layer.name for layer in bpy.context.scene.view_layers]
-    print("the layers at the end: ",list_layers)
     bpy.context.scene.render.film_transparent = True 
     bpy.context.scene.render.image_settings.file_format = 'OPEN_EXR'
     bpy.ops.render.render(write_still=True)#TODO
+
     print("Rendered")
+    #uuid, object file_path, texture, camerapose
+    row_to_append = [" ", object_filepath, current_texture, random_camera_pose]
+    csv_file = args.csv_path
+    with open(csv_file, mode='a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(row_to_append)
 
 main()

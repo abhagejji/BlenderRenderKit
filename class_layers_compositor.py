@@ -41,7 +41,7 @@ class ViewLayerCreation:
 
 
     def depth(self):    #either layer or a function in render or composition class
-       
+        self.current_layer.use_pass_z = True
         #OUTPUT
         output_file = self.tree.nodes.new("CompositorNodeOutputFile")
         output_file.name = "OutFile_depth"
@@ -56,7 +56,7 @@ class ViewLayerCreation:
         return
 
     def normals(self):  #either layer or a function in render or composition class
-
+        self.current_layer.use_pass_normal = True
         #OUTPUT
         output_file_normals = self.tree.nodes.new("CompositorNodeOutputFile")
         output_file_normals.name = "OutFile_normals"
@@ -68,7 +68,7 @@ class ViewLayerCreation:
         return
 
     def albedo(self):   #either layer or a function in render or composition class
-        
+        self.current_layer.use_pass_diffuse_color = True
         output_file_normals = self.tree.nodes.new("CompositorNodeOutputFile")
         output_file_normals.name = "OutFile_albedo"
         output_file_normals.base_path = self.output_img_folder
@@ -79,6 +79,8 @@ class ViewLayerCreation:
         return
 
     def segmentation(self): #either layer or a function in render or composition class
+        self.current_layer.use_pass_object_index = True
+        self.current_layer.pass_alpha_threshold = 0.05  
         for index, obj in enumerate(bpy.data.objects):
             obj.pass_index = index + 1
         output_file_normals = self.tree.nodes.new("CompositorNodeOutputFile")
@@ -90,3 +92,14 @@ class ViewLayerCreation:
         self.tree.links.new(self.tree.nodes["RLayers_all_" + self.view_layer_name].outputs["IndexOB"], self.tree.nodes['OutFile_segment'].inputs['Image'])
         
         return
+    
+    def shadow(self):   #either layer or a function in render or composition class
+        self.current_layer.use_pass_shadow = True # Not avaliable for blender 4 onwards
+        output_file_normals = self.tree.nodes.new("CompositorNodeOutputFile")
+        output_file_normals.name = "OutFile_shadow"
+        output_file_normals.base_path = self.output_img_folder
+        output_file_normals.format.file_format = "OPEN_EXR"
+        output_file_normals.file_slots[0].path = "shadow"
+        #LINK
+        self.tree.links.new(self.tree.nodes["RLayers_all_" + self.view_layer_name].outputs["Shadow"], self.tree.nodes['OutFile_shadow'].inputs['Image'])
+     

@@ -90,6 +90,7 @@ class MeshGeometry:
         plane_flat = bpy.context.object
         plane_flat.scale = (20,20,10)
         plane_flat.name = "flat_floor"
+        self.plane = plane_flat
         return plane_flat
 
     def create_ocean_floor(self):   #creating floor #3
@@ -107,3 +108,79 @@ class MeshGeometry:
         wave_modifier.wave_scale = 1
         bpy.ops.object.modifier_apply(modifier="new",object=plane)
         return plane
+    
+    def apply_pbr_textures(self,base_color_path, normals_path, roughness_path, displacement_path):
+        # Create a plane for the floor
+        bpy.ops.mesh.primitive_plane_add(size=10, enter_editmode=True, align='WORLD', location=(0, 0, -0.01))
+        plane = bpy.context.object
+        plane.name = "myFloor"
+        # Subdivide the plane for more geometry
+        bpy.ops.mesh.subdivide(number_cuts=10)
+        bpy.ops.object.editmode_toggle()
+        # bpy.context.object = self.plane
+        # plane = bpy.data.objects.get('flat_floor')
+        # Add a subdivision surface modifier for displacement
+        bpy.ops.object.modifier_add(type='SUBSURF')
+        plane.modifiers['Subdivision'].levels = 7
+        plane.modifiers['Subdivision'].render_levels = 7
+        
+        # Apply the modifier
+        bpy.ops.object.modifier_apply(modifier="Subdivision")
+        
+        # Create a new material
+        mat = bpy.data.materials.new(name="PBR_Material")
+        
+        
+        # Enable 'Use Nodes':
+        mat.use_nodes = True
+        nodes = mat.node_tree.nodes
+        links = mat.node_tree.links
+        
+        # Clear default nodes
+        for node in nodes:
+            nodes.remove(node)
+        
+        # Create Principled BSDF
+        bsdf = nodes.new(type='ShaderNodeBsdfPrincipled')
+        bsdf.location = 0,0
+        
+        # Load and link base color texture
+        base_color_img = bpy.data.images.load(base_color_path)
+        base_color_texture = nodes.new(type='ShaderNodeTexImage')
+        base_color_texture.image = base_color_img
+        links.new(base_color_texture.outputs['Color'], bsdf.inputs['Base Color'])
+        
+        # Load and link normal map
+        normal_img = bpy.data.images.load(normals_path)
+        normal_map = nodes.new(type='ShaderNodeNormalMap')
+        normal_texture = nodes.new(type='ShaderNodeTexImage')
+        normal_texture.image = normal_img
+        links.new(normal_texture.outputs['Color'], normal_map.inputs['Color'])
+        links.new(normal_map.outputs['Normal'], bsdf.inputs['Normal'])
+        
+        # Load and link roughness texture
+        roughness_img = bpy.data.images.load(roughness_path)
+        roughness_texture = nodes.new(type='ShaderNodeTexImage')
+        roughness_texture.image = roughness_img
+        links.new(roughness_texture.outputs['Color'], bsdf.inputs['Roughness'])
+        
+        # Add displacement
+        displacement_img = bpy.data.images.load(displacement_path)
+        displacement_texture = nodes.new('ShaderNodeTexImage')
+        displacement_texture.image = displacement_img
+        displacement = nodes.new(type='ShaderNodeDisplacement')
+        links.new(displacement_texture.outputs['Color'], displacement.inputs['Height'])
+        
+        # Link displacement to material output
+        material_output = nodes.new(type='ShaderNodeOutputMaterial')
+        links.new(displacement.outputs['Displacement'], material_output.inputs['Displacement'])
+        
+        # Set material settings for displacement
+        mat.cycles.displacement_method = 'BOTH'
+
+        # Link BSDF to material output
+        links.new(bsdf.outputs['BSDF'], material_output.inputs['Surface'])
+        plane.data.materials.append(mat)
+   
+        return plane
+    
