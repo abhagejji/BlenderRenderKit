@@ -1,6 +1,6 @@
 import sys
 import csv
-sys.path.append('/home/abha/abha/umn/rendering_blender/modular/')
+sys.path.append('./')
 import argparse
 import os
 from cleanup import Utilities
@@ -154,7 +154,7 @@ def main():
     #uuid, object file_path, texture, camerapose
     row_to_append = [" ", object_filepath, current_texture, random_camera_pose]
     csv_file = args.csv_path
-    with open(csv_file, mode='a', newline='') as f:
+    with open(csv_file, mode='a+', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(row_to_append)
 
