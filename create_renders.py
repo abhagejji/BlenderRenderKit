@@ -78,8 +78,6 @@ with open("./data/object_loc_output_loc.csv", 'r') as csv_file:
         with open(csv_filepath, mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerows(lines)
-        if index == 1:
-            break
 
 print("-----------------------------------------------------------------------")
 
